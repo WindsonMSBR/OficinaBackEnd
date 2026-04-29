@@ -1,0 +1,46 @@
+# .NET build outputs
+bin/
+obj/
+*.user
+*.userosscache
+*.vs/
+.vs/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Rider
+.idea/
+*.sln.iml
+
+# Database
+*.db
+*.sqlite
+*.mdf
+*.ldf
+*.log
+
+# User secrets
+secrets.json
+appsettings.*.json
+
+# Publish output
+/publish/
+
+# Node modules (se tiver front-end depois)
+node_modules/
+
+# Backup files
+*.bak
+*.tmp
+*.temp
+
+# OS generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
