@@ -45,18 +45,18 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Criar banco de dados se não existir
+// Aplicar migrations pendentes no banco de dados.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        await dbContext.Database.EnsureCreatedAsync();
-        Console.WriteLine("✅ Banco de dados verificado/criado com sucesso!");
+        await dbContext.Database.MigrateAsync();
+        Console.WriteLine("Banco de dados verificado/migrado com sucesso!");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Erro ao conectar ao PostgreSQL: {ex.Message}");
+        Console.WriteLine($"Erro ao conectar/migrar o PostgreSQL: {ex.Message}");
         throw;
     }
 }

@@ -16,15 +16,15 @@ namespace GestaoOficina.Infrastructure.Migrations
                 name: "Clientes",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Nome = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false),
-                    CpfCnpj = table.Column<string>(type: "varchar(18)", maxLength: 18, nullable: false),
-                    Telefone = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false),
-                    Email = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false),
-                    Endereco = table.Column<string>(type: "varchar(200)", maxLength: 200, nullable: false),
-                    DataCadastro = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    Ativo = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true)
+                    Nome = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    CpfCnpj = table.Column<string>(type: "character varying(18)", maxLength: 18, nullable: false),
+                    Telefone = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Endereco = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    DataCadastro = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    Ativo = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -35,15 +35,15 @@ namespace GestaoOficina.Infrastructure.Migrations
                 name: "Veiculos",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Placa = table.Column<string>(type: "varchar(8)", maxLength: 8, nullable: false),
-                    Modelo = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false),
-                    Marca = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false),
-                    Cor = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false),
-                    Ano = table.Column<int>(type: "int", nullable: false),
-                    KmAtual = table.Column<int>(type: "int", nullable: false),
-                    ClienteId = table.Column<int>(type: "int", nullable: false)
+                    Placa = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: false),
+                    Modelo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Marca = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Cor = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Ano = table.Column<int>(type: "integer", nullable: false),
+                    KmAtual = table.Column<int>(type: "integer", nullable: false),
+                    ClienteId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
