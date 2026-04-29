@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using GestaoOficina.Domain.Interfaces;
 using GestaoOficina.Infrastructure.Data;
 using GestaoOficina.Infrastructure.Repositories;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,13 +13,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 🔥 Configuração do MySQL - Substitua pela sua senha
-var connectionString = builder.Configuration.GetConnectionString("MySQLConnection") 
-    ?? "Server=localhost;Database=gestao_oficina;User=root;Password=123456;";
+// 🔥 Configuração do PostgreSQL com Supabase
+var connectionString = builder.Configuration.GetConnectionString("PostgreSQLConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        // Timeout maior para conexões remotas
+        npgsqlOptions.CommandTimeout(60);
+        // Enable retry on failure (recomendado para banco em nuvem)
+        npgsqlOptions.EnableRetryOnFailure(3);
+    }));
 // Registrar repositórios (Injeção de Dependência)
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IVeiculoRepository, VeiculoRepository>();
@@ -31,8 +36,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:3000",  // React
                 "http://localhost:4200",  // Angular
-                "http://localhost:5173",  // Vite
-                "http://localhost:8080")  // Vue
+                "http://localhost:5173")  // Vite/Vue
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -47,12 +51,12 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        dbContext.Database.EnsureCreated();
-        Console.WriteLine("Banco de dados verificado/criado com sucesso!");
+        await dbContext.Database.EnsureCreatedAsync();
+        Console.WriteLine("✅ Banco de dados verificado/criado com sucesso!");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Erro ao conectar ao MySQL: {ex.Message}");
+        Console.WriteLine($"❌ Erro ao conectar ao PostgreSQL: {ex.Message}");
         throw;
     }
 }
