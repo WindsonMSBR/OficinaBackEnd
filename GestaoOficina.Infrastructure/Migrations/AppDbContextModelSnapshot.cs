@@ -73,6 +73,66 @@ namespace GestaoOficina.Infrastructure.Migrations
                     b.ToTable("Clientes");
                 });
 
+            modelBuilder.Entity("GestaoOficina.Domain.Entities.OrdemServico", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("DataAbertura")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime?>("DataPrometida")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MecanicoResponsavel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Observacoes")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("Aberta");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<int>("VeiculoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("Numero")
+                        .IsUnique();
+
+                    b.HasIndex("VeiculoId");
+
+                    b.ToTable("OrdensServico");
+                });
+
             modelBuilder.Entity("GestaoOficina.Domain.Entities.Veiculo", b =>
                 {
                     b.Property<int>("Id")
@@ -120,6 +180,25 @@ namespace GestaoOficina.Infrastructure.Migrations
                     b.ToTable("Veiculos");
                 });
 
+            modelBuilder.Entity("GestaoOficina.Domain.Entities.OrdemServico", b =>
+                {
+                    b.HasOne("GestaoOficina.Domain.Entities.Cliente", "Cliente")
+                        .WithMany("OrdensServico")
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GestaoOficina.Domain.Entities.Veiculo", "Veiculo")
+                        .WithMany("OrdensServico")
+                        .HasForeignKey("VeiculoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Veiculo");
+                });
+
             modelBuilder.Entity("GestaoOficina.Domain.Entities.Veiculo", b =>
                 {
                     b.HasOne("GestaoOficina.Domain.Entities.Cliente", "Cliente")
@@ -133,7 +212,14 @@ namespace GestaoOficina.Infrastructure.Migrations
 
             modelBuilder.Entity("GestaoOficina.Domain.Entities.Cliente", b =>
                 {
+                    b.Navigation("OrdensServico");
+
                     b.Navigation("Veiculos");
+                });
+
+            modelBuilder.Entity("GestaoOficina.Domain.Entities.Veiculo", b =>
+                {
+                    b.Navigation("OrdensServico");
                 });
 #pragma warning restore 612, 618
         }

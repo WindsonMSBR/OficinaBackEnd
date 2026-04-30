@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
     
     public DbSet<Cliente> Clientes { get; set; }
     public DbSet<Veiculo> Veiculos { get; set; }
+    public DbSet<OrdemServico> OrdensServico { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,6 +51,11 @@ public class AppDbContext : DbContext
                 .WithOne(v => v.Cliente)
                 .HasForeignKey(v => v.ClienteId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(c => c.OrdensServico)
+                .WithOne(o => o.Cliente)
+                .HasForeignKey(o => o.ClienteId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
         
         // Configuração da tabela Veiculos
@@ -73,6 +79,40 @@ public class AppDbContext : DbContext
                 
             entity.Property(v => v.Cor)
                 .HasMaxLength(20);
+
+            entity.HasMany(v => v.OrdensServico)
+                .WithOne(o => o.Veiculo)
+                .HasForeignKey(o => o.VeiculoId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrdemServico>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+            entity.Property(o => o.Id).ValueGeneratedOnAdd();
+
+            entity.Property(o => o.Numero)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasIndex(o => o.Numero).IsUnique();
+
+            entity.Property(o => o.MecanicoResponsavel)
+                .HasMaxLength(100);
+
+            entity.Property(o => o.Observacoes)
+                .HasMaxLength(1000);
+
+            entity.Property(o => o.Status)
+                .IsRequired()
+                .HasMaxLength(40)
+                .HasDefaultValue("Aberta");
+
+            entity.Property(o => o.DataAbertura)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(o => o.ValorTotal)
+                .HasPrecision(12, 2);
         });
     }
 }

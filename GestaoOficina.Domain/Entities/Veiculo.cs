@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 
 namespace GestaoOficina.Domain.Entities;
 
@@ -15,4 +15,5 @@ public class Veiculo
     
     // Relacionamento: um veículo pertence a um cliente
     public Cliente? Cliente { get; set; }
+    public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
 }

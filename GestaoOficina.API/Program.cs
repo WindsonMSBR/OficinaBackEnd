@@ -27,6 +27,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Registrar repositórios (Injeção de Dependência)
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IVeiculoRepository, VeiculoRepository>();
+builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
 
 // Configurar CORS para o front-end acessar
 builder.Services.AddCors(options =>
@@ -36,7 +37,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:3000",  // React
                 "http://localhost:4200",  // Angular
-                "http://localhost:5173")  // Vite/Vue
+                "http://localhost:5173",  // Vite/Vue
+                "http://127.0.0.1:5173")  // Vite local
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

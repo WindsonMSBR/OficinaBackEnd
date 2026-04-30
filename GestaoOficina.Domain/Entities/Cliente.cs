@@ -11,9 +11,10 @@ public class Cliente
     public string Telefone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Endereco { get; set; } = string.Empty;
-    public DateTime DataCadastro { get; set; } = DateTime.Now;
+    public DateTime DataCadastro { get; set; } = DateTime.UtcNow;
     public bool Ativo { get; set; } = true;
     
     // Relacionamento: um cliente pode ter vários veículos
     public ICollection<Veiculo> Veiculos { get; set; } = new List<Veiculo>();
+    public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
 }

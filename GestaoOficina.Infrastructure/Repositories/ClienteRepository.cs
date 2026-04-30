@@ -17,6 +17,7 @@ public class ClienteRepository : IClienteRepository
     public async Task<IEnumerable<Cliente>> GetAllAsync()
     {
         return await _context.Clientes
+            .Where(c => c.Ativo)
             .Include(c => c.Veiculos)
             .ToListAsync();
     }
@@ -31,7 +32,7 @@ public class ClienteRepository : IClienteRepository
     public async Task<IEnumerable<Cliente>> GetByNomeAsync(string nome)
     {
         return await _context.Clientes
-            .Where(c => c.Nome.Contains(nome))
+            .Where(c => c.Ativo && c.Nome.Contains(nome))
             .Include(c => c.Veiculos)
             .ToListAsync();
     }

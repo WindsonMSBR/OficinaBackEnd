@@ -11,41 +11,135 @@ public class VeiculoController : ControllerBase
 {
     private readonly IVeiculoRepository _veiculoRepository;
     private readonly IClienteRepository _clienteRepository;
-    
-    public VeiculoController(IVeiculoRepository veiculoRepository, IClienteRepository clienteRepository)
+    private readonly IOrdemServicoRepository _ordemServicoRepository;
+
+    public VeiculoController(
+        IVeiculoRepository veiculoRepository,
+        IClienteRepository clienteRepository,
+        IOrdemServicoRepository ordemServicoRepository)
     {
         _veiculoRepository = veiculoRepository;
         _clienteRepository = clienteRepository;
+        _ordemServicoRepository = ordemServicoRepository;
     }
-    
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
         var veiculos = await _veiculoRepository.GetAllAsync();
-        var response = veiculos.Select(v => new VeiculoResponseDto
-        {
-            Id = v.Id,
-            Placa = v.Placa,
-            Modelo = v.Modelo,
-            Marca = v.Marca,
-            Cor = v.Cor,
-            Ano = v.Ano,
-            KmAtual = v.KmAtual,
-            ClienteId = v.ClienteId,
-            NomeCliente = v.Cliente?.Nome ?? string.Empty
-        });
-        
-        return Ok(response);
+        return Ok(veiculos.Select(ToResponse));
     }
-    
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var veiculo = await _veiculoRepository.GetByIdAsync(id);
         if (veiculo == null)
-            return NotFound($"Veículo com ID {id} não encontrado");
-            
-        var response = new VeiculoResponseDto
+            return NotFound($"Veiculo com ID {id} nao encontrado");
+
+        return Ok(ToResponse(veiculo));
+    }
+
+    [HttpGet("cliente/{clienteId}")]
+    public async Task<IActionResult> GetByCliente(int clienteId)
+    {
+        var veiculos = await _veiculoRepository.GetByClienteIdAsync(clienteId);
+        return Ok(veiculos.Select(ToResponse));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] VeiculoRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Placa))
+            return BadRequest("Placa e obrigatoria");
+
+        if (string.IsNullOrWhiteSpace(request.Modelo))
+            return BadRequest("Modelo e obrigatorio");
+
+        var validationError = ValidateRequest(request);
+        if (validationError != null)
+            return validationError;
+
+        var cliente = await _clienteRepository.GetByIdAsync(request.ClienteId);
+        if (cliente == null)
+            return BadRequest($"Cliente com ID {request.ClienteId} nao encontrado");
+
+        var placa = request.Placa.ToUpper();
+        var veiculosComPlaca = await _veiculoRepository.GetByPlacaAsync(placa);
+        if (veiculosComPlaca.Any(v => v.Placa.Equals(placa, StringComparison.OrdinalIgnoreCase)))
+            return Conflict($"Ja existe um veiculo com a placa {placa}");
+
+        var veiculo = new Veiculo
+        {
+            Placa = placa,
+            Modelo = request.Modelo,
+            Marca = request.Marca,
+            Cor = request.Cor,
+            Ano = request.Ano,
+            KmAtual = request.KmAtual,
+            ClienteId = request.ClienteId
+        };
+
+        var created = await _veiculoRepository.CreateAsync(veiculo);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, ToResponse(created));
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] VeiculoRequestDto request)
+    {
+        var veiculo = await _veiculoRepository.GetByIdAsync(id);
+        if (veiculo == null)
+            return NotFound($"Veiculo com ID {id} nao encontrado");
+
+        if (string.IsNullOrWhiteSpace(request.Placa))
+            return BadRequest("Placa e obrigatoria");
+
+        if (string.IsNullOrWhiteSpace(request.Modelo))
+            return BadRequest("Modelo e obrigatorio");
+
+        var validationError = ValidateRequest(request);
+        if (validationError != null)
+            return validationError;
+
+        var cliente = await _clienteRepository.GetByIdAsync(request.ClienteId);
+        if (cliente == null)
+            return BadRequest($"Cliente com ID {request.ClienteId} nao encontrado");
+
+        var placa = request.Placa.ToUpper();
+        var veiculosComPlaca = await _veiculoRepository.GetByPlacaAsync(placa);
+        if (veiculosComPlaca.Any(v => v.Id != id && v.Placa.Equals(placa, StringComparison.OrdinalIgnoreCase)))
+            return Conflict($"Ja existe outro veiculo com a placa {placa}");
+
+        veiculo.Placa = placa;
+        veiculo.Modelo = request.Modelo;
+        veiculo.Marca = request.Marca;
+        veiculo.Cor = request.Cor;
+        veiculo.Ano = request.Ano;
+        veiculo.KmAtual = request.KmAtual;
+        veiculo.ClienteId = request.ClienteId;
+
+        await _veiculoRepository.UpdateAsync(veiculo);
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var veiculo = await _veiculoRepository.GetByIdAsync(id);
+        if (veiculo == null)
+            return NotFound($"Veiculo com ID {id} nao encontrado");
+
+        var ordens = await _ordemServicoRepository.GetByClienteIdAsync(veiculo.ClienteId);
+        if (ordens.Any(o => o.VeiculoId == id))
+            return Conflict("Nao e possivel excluir este veiculo porque existem ordens de servico vinculadas a ele.");
+
+        await _veiculoRepository.DeleteAsync(id);
+        return NoContent();
+    }
+
+    private static VeiculoResponseDto ToResponse(Veiculo veiculo)
+    {
+        return new VeiculoResponseDto
         {
             Id = veiculo.Id,
             Placa = veiculo.Placa,
@@ -57,91 +151,22 @@ public class VeiculoController : ControllerBase
             ClienteId = veiculo.ClienteId,
             NomeCliente = veiculo.Cliente?.Nome ?? string.Empty
         };
-            
-        return Ok(response);
     }
-    
-    [HttpGet("cliente/{clienteId}")]
-    public async Task<IActionResult> GetByCliente(int clienteId)
+
+    private static IActionResult? ValidateRequest(VeiculoRequestDto request)
     {
-        var veiculos = await _veiculoRepository.GetByClienteIdAsync(clienteId);
-        var response = veiculos.Select(v => new VeiculoResponseDto
-        {
-            Id = v.Id,
-            Placa = v.Placa,
-            Modelo = v.Modelo,
-            Marca = v.Marca,
-            Cor = v.Cor,
-            Ano = v.Ano,
-            KmAtual = v.KmAtual,
-            ClienteId = v.ClienteId,
-            NomeCliente = v.Cliente?.Nome ?? string.Empty
-        });
-        
-        return Ok(response);
-    }
-    
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] VeiculoRequestDto request)
-    {
-        // Validações
-        if (string.IsNullOrWhiteSpace(request.Placa))
-            return BadRequest("Placa é obrigatória");
-            
-        if (string.IsNullOrWhiteSpace(request.Modelo))
-            return BadRequest("Modelo é obrigatório");
-            
-        // Verifica se o cliente existe
-        var cliente = await _clienteRepository.GetByIdAsync(request.ClienteId);
-        if (cliente == null)
-            return BadRequest($"Cliente com ID {request.ClienteId} não encontrado");
-            
-        var veiculo = new Veiculo
-        {
-            Placa = request.Placa.ToUpper(),
-            Modelo = request.Modelo,
-            Marca = request.Marca,
-            Cor = request.Cor,
-            Ano = request.Ano,
-            KmAtual = request.KmAtual,
-            ClienteId = request.ClienteId
-        };
-        
-        var created = await _veiculoRepository.CreateAsync(veiculo);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-    }
-    
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] VeiculoRequestDto request)
-    {
-        var veiculo = await _veiculoRepository.GetByIdAsync(id);
-        if (veiculo == null)
-            return NotFound($"Veículo com ID {id} não encontrado");
-            
-        // Verifica se o cliente existe
-        var cliente = await _clienteRepository.GetByIdAsync(request.ClienteId);
-        if (cliente == null)
-            return BadRequest($"Cliente com ID {request.ClienteId} não encontrado");
-            
-        veiculo.Placa = request.Placa.ToUpper();
-        veiculo.Modelo = request.Modelo;
-        veiculo.Marca = request.Marca;
-        veiculo.Cor = request.Cor;
-        veiculo.Ano = request.Ano;
-        veiculo.KmAtual = request.KmAtual;
-        veiculo.ClienteId = request.ClienteId;
-        
-        await _veiculoRepository.UpdateAsync(veiculo);
-        return NoContent();
-    }
-    
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var deleted = await _veiculoRepository.DeleteAsync(id);
-        if (!deleted)
-            return NotFound($"Veículo com ID {id} não encontrado");
-            
-        return NoContent();
+        if (request.Placa.Length > 8)
+            return new BadRequestObjectResult("Placa deve ter no maximo 8 caracteres");
+
+        if (request.Modelo.Length > 50)
+            return new BadRequestObjectResult("Modelo deve ter no maximo 50 caracteres");
+
+        if (request.Marca.Length > 50)
+            return new BadRequestObjectResult("Marca deve ter no maximo 50 caracteres");
+
+        if (request.Cor.Length > 20)
+            return new BadRequestObjectResult("Cor deve ter no maximo 20 caracteres");
+
+        return null;
     }
 }
