@@ -21,6 +21,27 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function toQuery(params: Record<string, string | number | undefined | null>) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  const query = searchParams.toString();
+  return query ? `?${query}` : "";
+}
+
+export type PaginatedResponse<T> = {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type Cliente = {
   id: number;
   nome: string;
@@ -91,6 +112,8 @@ export type OrdemServicoRequest = {
 
 export const clientesApi = {
   list: () => request<Cliente[]>("/api/Cliente"),
+  listPaged: (params: { search?: string; page?: number; pageSize?: number }) =>
+    request<PaginatedResponse<Cliente>>(`/api/Cliente/paged${toQuery(params)}`),
   create: (cliente: ClienteRequest) =>
     request<Cliente>("/api/Cliente", {
       method: "POST",
@@ -109,6 +132,8 @@ export const clientesApi = {
 
 export const veiculosApi = {
   list: () => request<Veiculo[]>("/api/Veiculo"),
+  listPaged: (params: { search?: string; page?: number; pageSize?: number }) =>
+    request<PaginatedResponse<Veiculo>>(`/api/Veiculo/paged${toQuery(params)}`),
   create: (veiculo: VeiculoRequest) =>
     request<Veiculo>("/api/Veiculo", {
       method: "POST",
@@ -127,6 +152,15 @@ export const veiculosApi = {
 
 export const ordensServicoApi = {
   list: () => request<OrdemServico[]>("/api/OrdemServico"),
+  listPaged: (params: {
+    search?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }) =>
+    request<PaginatedResponse<OrdemServico>>(
+      `/api/OrdemServico/paged${toQuery(params)}`
+    ),
   create: (ordemServico: OrdemServicoRequest) =>
     request<OrdemServico>("/api/OrdemServico", {
       method: "POST",

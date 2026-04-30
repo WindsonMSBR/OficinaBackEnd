@@ -30,6 +30,22 @@ public class VeiculoController : ControllerBase
         return Ok(veiculos.Select(ToResponse));
     }
 
+    [HttpGet("paged")]
+    public async Task<IActionResult> GetPaged([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        (page, pageSize) = NormalizePagination(page, pageSize);
+        var (items, totalCount) = await _veiculoRepository.GetPagedAsync(search, page, pageSize);
+
+        return Ok(new PaginatedResponseDto<VeiculoResponseDto>
+        {
+            Items = items.Select(ToResponse),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = CalculateTotalPages(totalCount, pageSize)
+        });
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -168,5 +184,17 @@ public class VeiculoController : ControllerBase
             return new BadRequestObjectResult("Cor deve ter no maximo 20 caracteres");
 
         return null;
+    }
+
+    private static (int Page, int PageSize) NormalizePagination(int page, int pageSize)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        return (page, pageSize);
+    }
+
+    private static int CalculateTotalPages(int totalCount, int pageSize)
+    {
+        return totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
     }
 }

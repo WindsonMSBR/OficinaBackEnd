@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Edit, Eye, Filter, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { OrdemServico, ordensServicoApi } from "../services/api";
@@ -23,37 +23,28 @@ export function OrdemServicoList() {
   const [ordens, setOrdens] = useState<OrdemServico[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const filteredOrdens = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim();
-
-    return ordens.filter((ordem) => {
-      const matchesStatus =
-        statusFilter === "todos" || ordem.status === statusFilter;
-
-      const matchesSearch =
-        !term ||
-        [
-          ordem.numero,
-          ordem.nomeCliente,
-          ordem.veiculoDescricao,
-          ordem.placa,
-          ordem.mecanicoResponsavel,
-        ].some((value) => value.toLowerCase().includes(term));
-
-      return matchesStatus && matchesSearch;
-    });
-  }, [ordens, searchTerm, statusFilter]);
 
   async function loadOrdens() {
     setLoading(true);
     setError("");
 
     try {
-      setOrdens(await ordensServicoApi.list());
+      const response = await ordensServicoApi.listPaged({
+        search: searchTerm,
+        status: statusFilter,
+        page,
+        pageSize: 10,
+      });
+
+      setOrdens(response.items);
+      setTotalCount(response.totalCount);
+      setTotalPages(response.totalPages);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar ordens");
     } finally {
@@ -63,7 +54,7 @@ export function OrdemServicoList() {
 
   useEffect(() => {
     loadOrdens();
-  }, []);
+  }, [page, searchTerm, statusFilter]);
 
   async function removeOrdem(id: number) {
     const confirmed = window.confirm("Deseja excluir esta ordem de servico?");
@@ -123,7 +114,10 @@ export function OrdemServicoList() {
               type="text"
               placeholder="Buscar por numero, cliente, placa..."
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setPage(1);
+              }}
               className="w-full pl-10 pr-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -144,7 +138,10 @@ export function OrdemServicoList() {
               </label>
               <select
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value);
+                  setPage(1);
+                }}
                 className="w-full px-3 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="todos">Todos</option>
@@ -179,14 +176,14 @@ export function OrdemServicoList() {
                     Carregando ordens de servico...
                   </td>
                 </tr>
-              ) : filteredOrdens.length === 0 ? (
+              ) : ordens.length === 0 ? (
                 <tr>
                   <td className="p-3 text-muted-foreground" colSpan={7}>
                     Nenhuma ordem encontrada.
                   </td>
                 </tr>
               ) : (
-                filteredOrdens.map((ordem) => (
+                ordens.map((ordem) => (
                   <tr
                     key={ordem.id}
                     className="border-b border-border hover:bg-muted transition-colors"
@@ -237,8 +234,27 @@ export function OrdemServicoList() {
 
         <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-muted-foreground">
-            Mostrando {filteredOrdens.length} de {ordens.length} resultados
+            Mostrando {ordens.length} de {totalCount} resultados
           </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={page <= 1}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="px-4 py-2 text-sm text-muted-foreground">
+              {page} / {Math.max(1, totalPages)}
+            </span>
+            <button
+              onClick={() => setPage((current) => current + 1)}
+              disabled={totalPages === 0 || page >= totalPages}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50"
+            >
+              Proxima
+            </button>
+          </div>
         </div>
       </div>
     </div>

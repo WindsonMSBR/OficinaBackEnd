@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Edit, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
 import {
   Cliente,
@@ -26,24 +26,12 @@ export function Veiculos() {
   const [form, setForm] = useState<VeiculoRequest>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  const filteredVeiculos = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return veiculos;
-
-    return veiculos.filter((veiculo) =>
-      [
-        veiculo.placa,
-        veiculo.modelo,
-        veiculo.marca,
-        veiculo.cor,
-        veiculo.nomeCliente,
-      ].some((value) => value.toLowerCase().includes(term))
-    );
-  }, [searchTerm, veiculos]);
 
   async function loadData() {
     setLoading(true);
@@ -52,11 +40,13 @@ export function Veiculos() {
     try {
       const [clientesResponse, veiculosResponse] = await Promise.all([
         clientesApi.list(),
-        veiculosApi.list(),
+        veiculosApi.listPaged({ search: searchTerm, page, pageSize: 10 }),
       ]);
 
       setClientes(clientesResponse);
-      setVeiculos(veiculosResponse);
+      setVeiculos(veiculosResponse.items);
+      setTotalCount(veiculosResponse.totalCount);
+      setTotalPages(veiculosResponse.totalPages);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar dados");
     } finally {
@@ -66,7 +56,7 @@ export function Veiculos() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [page, searchTerm]);
 
   function resetForm() {
     setForm(emptyForm);
@@ -252,7 +242,10 @@ export function Veiculos() {
           />
           <input
             value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+              setPage(1);
+            }}
             placeholder="Buscar por placa, modelo, marca, cor ou cliente"
             className="w-full pl-10 pr-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           />
@@ -278,14 +271,14 @@ export function Veiculos() {
                     Carregando veiculos...
                   </td>
                 </tr>
-              ) : filteredVeiculos.length === 0 ? (
+              ) : veiculos.length === 0 ? (
                 <tr>
                   <td className="p-3 text-muted-foreground" colSpan={7}>
                     Nenhum veiculo encontrado.
                   </td>
                 </tr>
               ) : (
-                filteredVeiculos.map((veiculo) => (
+                veiculos.map((veiculo) => (
                   <tr
                     key={veiculo.id}
                     className="border-b border-border hover:bg-muted transition-colors"
@@ -319,6 +312,31 @@ export function Veiculos() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between mt-6">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {veiculos.length} de {totalCount} veiculos
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={page <= 1}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="px-4 py-2 text-sm text-muted-foreground">
+              {page} / {Math.max(1, totalPages)}
+            </span>
+            <button
+              onClick={() => setPage((current) => current + 1)}
+              disabled={totalPages === 0 || page >= totalPages}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50"
+            >
+              Proxima
+            </button>
+          </div>
         </div>
       </div>
     </div>

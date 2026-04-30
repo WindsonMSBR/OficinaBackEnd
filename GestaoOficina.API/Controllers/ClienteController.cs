@@ -23,6 +23,22 @@ public class ClienteController : ControllerBase
         return Ok(clientes.Select(ToResponse));
     }
 
+    [HttpGet("paged")]
+    public async Task<IActionResult> GetPaged([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        (page, pageSize) = NormalizePagination(page, pageSize);
+        var (items, totalCount) = await _clienteRepository.GetPagedAsync(search, page, pageSize);
+
+        return Ok(new PaginatedResponseDto<ClienteResponseDto>
+        {
+            Items = items.Select(ToResponse),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = CalculateTotalPages(totalCount, pageSize)
+        });
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -137,5 +153,17 @@ public class ClienteController : ControllerBase
             Ativo = cliente.Ativo,
             QuantidadeVeiculos = cliente.Veiculos?.Count ?? 0
         };
+    }
+
+    private static (int Page, int PageSize) NormalizePagination(int page, int pageSize)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        return (page, pageSize);
+    }
+
+    private static int CalculateTotalPages(int totalCount, int pageSize)
+    {
+        return totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
     }
 }

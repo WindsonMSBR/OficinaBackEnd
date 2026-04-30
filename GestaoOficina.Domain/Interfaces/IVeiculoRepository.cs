@@ -7,6 +7,7 @@ namespace GestaoOficina.Domain.Interfaces;
 public interface IVeiculoRepository
 {
     Task<IEnumerable<Veiculo>> GetAllAsync();
+    Task<(IEnumerable<Veiculo> Items, int TotalCount)> GetPagedAsync(string? search, int page, int pageSize);
     Task<Veiculo?> GetByIdAsync(int id);
     Task<IEnumerable<Veiculo>> GetByPlacaAsync(string placa);
     Task<IEnumerable<Veiculo>> GetByClienteIdAsync(int clienteId);

@@ -25,6 +25,7 @@ GestaoOficina/
 - Validacoes para evitar erros internos no banco.
 - Dashboard com indicadores basicos vindos da API.
 - Integracao front/back via proxy do Vite em `/api`.
+- Listagens com busca e paginacao no servidor.
 
 ## Tecnologias
 
@@ -144,6 +145,7 @@ Por isso, no navegador o front pode chamar `/api/Cliente`, `/api/Veiculo` e `/ap
 
 ```http
 GET    /api/Cliente
+GET    /api/Cliente/paged?page=1&pageSize=20&search=texto
 GET    /api/Cliente/{id}
 GET    /api/Cliente/buscar/{nome}
 POST   /api/Cliente
@@ -155,6 +157,7 @@ DELETE /api/Cliente/{id}
 
 ```http
 GET    /api/Veiculo
+GET    /api/Veiculo/paged?page=1&pageSize=20&search=texto
 GET    /api/Veiculo/{id}
 GET    /api/Veiculo/cliente/{clienteId}
 POST   /api/Veiculo
@@ -166,6 +169,7 @@ DELETE /api/Veiculo/{id}
 
 ```http
 GET    /api/OrdemServico
+GET    /api/OrdemServico/paged?page=1&pageSize=20&search=texto&status=Aberta
 GET    /api/OrdemServico/{id}
 GET    /api/OrdemServico/cliente/{clienteId}
 POST   /api/OrdemServico
@@ -180,6 +184,8 @@ As migrations ficam em:
 ```text
 GestaoOficina.Infrastructure/Migrations
 ```
+
+As migrations automaticas no startup ficam desativadas por padrao para a API iniciar mais rapido.
 
 Para aplicar migrations:
 
@@ -201,6 +207,8 @@ dotnet ef migrations add NomeDaMigration --project GestaoOficina.Infrastructure\
 - Placa duplicada retorna `409 Conflict`.
 - Campos acima do tamanho permitido retornam `400 Bad Request`.
 - Datas sao tratadas em UTC para funcionar corretamente com PostgreSQL.
+- Listagens principais usam paginacao para evitar carregar muitos registros de uma vez.
+- Migrations devem ser aplicadas manualmente com `dotnet ef database update`.
 
 ## Erros Comuns
 

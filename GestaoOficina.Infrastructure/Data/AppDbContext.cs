@@ -30,6 +30,8 @@ public class AppDbContext : DbContext
                 .HasMaxLength(18);
                 
             entity.HasIndex(c => c.CpfCnpj).IsUnique();
+            entity.HasIndex(c => c.Nome);
+            entity.HasIndex(c => c.Ativo);
             
             entity.Property(c => c.Telefone)
                 .HasMaxLength(20);
@@ -69,6 +71,7 @@ public class AppDbContext : DbContext
                 .HasMaxLength(8);
                 
             entity.HasIndex(v => v.Placa).IsUnique();
+            entity.HasIndex(v => v.ClienteId);
             
             entity.Property(v => v.Modelo)
                 .IsRequired()
@@ -96,6 +99,8 @@ public class AppDbContext : DbContext
                 .HasMaxLength(20);
 
             entity.HasIndex(o => o.Numero).IsUnique();
+            entity.HasIndex(o => o.Status);
+            entity.HasIndex(o => o.DataAbertura);
 
             entity.Property(o => o.MecanicoResponsavel)
                 .HasMaxLength(100);

@@ -30,6 +30,26 @@ public class OrdemServicoController : ControllerBase
         return Ok(ordens.Select(ToResponse));
     }
 
+    [HttpGet("paged")]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] string? search,
+        [FromQuery] string? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        (page, pageSize) = NormalizePagination(page, pageSize);
+        var (items, totalCount) = await _ordemServicoRepository.GetPagedAsync(search, status, page, pageSize);
+
+        return Ok(new PaginatedResponseDto<OrdemServicoResponseDto>
+        {
+            Items = items.Select(ToResponse),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = CalculateTotalPages(totalCount, pageSize)
+        });
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -175,5 +195,17 @@ public class OrdemServicoController : ControllerBase
             DateTimeKind.Local => dateTime.Value.ToUniversalTime(),
             _ => DateTime.SpecifyKind(dateTime.Value, DateTimeKind.Utc)
         };
+    }
+
+    private static (int Page, int PageSize) NormalizePagination(int page, int pageSize)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        return (page, pageSize);
+    }
+
+    private static int CalculateTotalPages(int totalCount, int pageSize)
+    {
+        return totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
     }
 }
